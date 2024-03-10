@@ -9,36 +9,49 @@
       "board": 0,
       "title": "Column 0",
       "order": 0
+    },
+    {
+      "id": 1,
+      "board": 0,
+      "title": "siiiick",
+      "order": 1
     }
   ],
   "notes": [
     {
       "id": 0,
       "board": 0,
-      "column": 0,
-      "order": 0,
+      "column": 1,
+      "order": 4,
       "body": "Note 0"
     },
     {
       "id": 7,
       "board": 0,
-      "column": 0,
-      "order": 7,
+      "column": 1,
+      "order": 2,
       "body": "Note 7"
     },
     {
       "id": 8,
       "board": 0,
-      "column": 0,
-      "order": 8,
+      "column": 1,
+      "order": 1,
       "body": "Note 8"
     },
     {
       "id": 9,
       "board": 0,
-      "column": 0,
-      "order": 9,
+      "column": 1,
+      "order": 3,
       "body": "Note 9"
+    },
+    {
+      "id": 4,
+      "board": 0,
+      "column": 1,
+      "order": 0,
+      "body": "lets add a note here"
     }
   ]
 }

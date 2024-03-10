@@ -1,24 +1,19 @@
 import { JSONFilePreset } from "lowdb/node";
-import { BoardData } from "~/components/Board";
+import { Board, Column, Note } from "./board";
+
+export type BoardData = {
+  board: Board;
+  columns: Column[];
+  notes: Note[];
+};
 
 const mock: BoardData = {
   board: {
     id: 0,
     title: "Board 0",
   },
-  columns: Array.from({ length: 3 }, (_, i) => ({
-    id: i,
-    board: 0,
-    title: `Column ${i}`,
-    order: i,
-  })),
-  notes: Array.from({ length: 10 }, (_, i) => ({
-    id: i,
-    board: 0,
-    column: 0,
-    order: i,
-    body: `Note ${i}`,
-  })),
+  columns: [],
+  notes: [],
 };
 
 export const db = await JSONFilePreset('db.json', mock)

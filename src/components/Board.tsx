@@ -1,10 +1,8 @@
 import {
   Accessor,
   For,
-  Index,
   Match,
   Switch,
-  createEffect,
   createMemo,
   createSignal,
 } from "solid-js";
@@ -12,14 +10,8 @@ import * as board from "../application/board";
 import { Popover } from "@kobalte/core";
 import { BsPlus, BsThreeDotsVertical } from "solid-icons/bs";
 import { RiEditorDraggable } from "solid-icons/ri";
-import { action, cache, createAsyncStore, useAction } from "@solidjs/router";
-import { db } from "~/application/db";
-
-export type BoardData = {
-  board: board.Board;
-  columns: board.Column[];
-  notes: board.Note[];
-};
+import { action, cache, useAction } from "@solidjs/router";
+import { BoardData, db } from "~/application/db";
 
 export const createColumn = action(
   async (board: board.BoardId, title: string) => {
@@ -81,7 +73,14 @@ export const editNote = action(async (id: number, content: string) => {
 });
 
 export const moveNote = action(
-  async (note: board.Note, order: board.Order) => {}
+  async (note: number, column: number, order: number) => {
+    "use server";
+    const index = db.data.notes.findIndex((n) => n.id === note);
+    db.data.notes[index].column = column;
+    db.data.notes[index].order = order;
+    await db.write();
+    return true;
+  }
 );
 
 export const deleteNote = action(async (id: number) => {
@@ -105,21 +104,38 @@ export function Board(props: { board: Accessor<BoardData> }) {
   return (
     <div class="min-w-full overflow-scroll min-h-screen p-12 flex flex-start items-start space-x-12 flex-nowrap">
       <For each={columns()}>
-        {(column) => <Column column={column} data={props.board()} />}
+        {(column) => <Column column={column} notes={props.board().notes} />}
       </For>
       <AddColumn board={props.board().board.id} />
     </div>
   );
 }
 
-function Column(props: { column: board.Column; data: BoardData }) {
+function Column(props: { column: board.Column; notes: board.Note[] }) {
   const notes = createMemo(() =>
-    props.data.notes.filter((n) => n.column === props.column.id)
+    props.notes.filter((n) => n.column === props.column.id).sort((a, b) => a.order - b.order)
   );
   const renameAction = useAction(renameColumn);
   const deleteAction = useAction(deleteColumn);
+  const moveNoteAction = useAction(moveNote);
   return (
-    <div class="w-full max-w-[300px] shrink-0">
+    <div
+      class="w-full max-w-[300px] shrink-0"
+      onDragEnter={(e) => e.preventDefault()}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        const noteId = e.dataTransfer?.getData("text/plain");
+        if (noteId) {
+          console.log("dropped", noteId, "on", props.column.title);
+          moveNoteAction(
+            parseInt(noteId),
+            props.column.id,
+            notes().length
+          );
+        }
+      }}
+    >
       <div class="card card-side flex items-center bg-base-300 px-2 py-2 mb-2 space-x-1">
         <div>
           <RiEditorDraggable size={6} class="cursor-move" />
@@ -143,10 +159,41 @@ function Column(props: { column: board.Column; data: BoardData }) {
 function Note(props: { note: board.Note }) {
   const updateAction = useAction(editNote);
   const deleteAction = useAction(deleteNote);
+  const moveNoteAction = useAction(moveNote);
   let input: HTMLTextAreaElement | undefined;
+
+  const [isBeingDragged, setIsBeingDragged] = createSignal(false);
   return (
-    <div class="card card-side px-1 py-2 w-full bg-base-200 text-lg flex justify-between items-center space-x-1">
-      <div class="">
+    <div
+      style={{
+        opacity: isBeingDragged() ? .25 : 1,
+      }}
+      draggable="true"
+      class="card card-side px-1 py-2 w-full bg-base-200 text-lg flex justify-between items-center space-x-1"
+      onDragStart={(e) => {
+        e.dataTransfer?.setData("text/plain", props.note.id.toString());
+      }}
+      onDrag={(e) => {
+        setIsBeingDragged(true);
+      }}
+      onDragEnd={(e) => {
+        setIsBeingDragged(false);
+      }}
+      onDragEnter={(e) => e.preventDefault()}
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={(e) => {
+        e.preventDefault();
+        const noteId = e.dataTransfer?.getData("text/plain");
+        if (noteId) {
+          moveNoteAction(
+            parseInt(noteId),
+            props.note.column,
+            props.note.order
+          );
+        }
+      }}
+    >
+      <div>
         <RiEditorDraggable size={6} class="cursor-move" />
       </div>
       <textarea
