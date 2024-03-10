@@ -143,6 +143,50 @@ export function Board(props: { board: BoardData; actions: Actions }) {
       });
     }
 
+    for(const note of editNoteSubmission.values()) {
+      if (!note.pending) continue;
+      const [id, content, timestamp] = note.input;
+      mutations.push({
+        type: "editNote",
+        id,
+        content,
+        timestamp,
+      });
+    }
+
+    for (const column of createColumnSubmission.values()) {
+      if (!column.pending) continue;
+      const [id, board, title, timestamp] = column.input;
+      mutations.push({
+        type: "createColumn",
+        id,
+        board,
+        title,
+        timestamp,
+      });
+    }
+
+    for (const column of renameColumnSubmission.values()) {
+      if (!column.pending) continue;
+      const [id, title, timestamp] = column.input;
+      mutations.push({
+        type: "renameColumn",
+        id,
+        title,
+        timestamp,
+      });
+    }
+
+    for (const column of deleteColumnSubmission.values()) {
+      if (!column.pending) continue;
+      const [id, timestamp] = column.input;
+      mutations.push({
+        type: "deleteColumn",
+        id,
+        timestamp,
+      });
+    }
+
     const newNotes = [...props.board.notes];
     const newColumns = [...props.board.columns];
     const newBoard = Object.assign({}, props.board.board);
@@ -168,8 +212,34 @@ export function Board(props: { board: BoardData; actions: Actions }) {
         case "moveNote": {
           const index = newNotes.findIndex((n) => n.id === mut.id);
           if (index === -1) break;
-          newNotes[index].column = mut.column;
-          newNotes[index].order = mut.order;
+          newNotes[index] = { ...newNotes[index], column: mut.column, order: mut.order };
+          break;
+        }
+        case "editNote": {
+          const index = newNotes.findIndex((n) => n.id === mut.id);
+          if (index === -1) break;
+          newNotes[index] = { ...newNotes[index], body: mut.content };
+          break;
+        }
+        case "createColumn": {
+          newColumns.push({
+            id: mut.id,
+            board: mut.board,
+            title: mut.title,
+            order: newColumns.length + 1,
+          });
+          break;
+        }
+        case "renameColumn": {
+          const index = newColumns.findIndex((c) => c.id === mut.id);
+          if (index === -1) break;
+          newColumns[index] = { ...newColumns[index], title: mut.title };
+          break;
+        }
+        case "deleteColumn": {
+          const index = newColumns.findIndex((c) => c.id === mut.id);
+          if (index === -1) break;
+          newColumns.splice(index, 1);
           break;
         }
       }
@@ -178,9 +248,9 @@ export function Board(props: { board: BoardData; actions: Actions }) {
     console.log("newNotes", newNotes, "mutations", mutations);
 
     batch(() => {
-      setBoardStore("notes", newNotes);
-      setBoardStore("columns", newColumns);
-      setBoardStore("board", newBoard);
+      setBoardStore("notes", reconcile(newNotes));
+      setBoardStore("columns", reconcile(newColumns));
+      setBoardStore("board", reconcile(newBoard));
     });
   });
 
@@ -352,7 +422,7 @@ function Note(props: { note: Note; previous: number; next: number }) {
           )
         }
       >
-        {`${props.note.body} @ ${props.note.order}, before: ${props.previous}, after: ${props.next}`}
+        {`${props.note.body}`}
       </textarea>
       <NoteMenu
         delete={() => deleteAction(props.note.id, new Date().getTime())}

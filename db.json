@@ -7,23 +7,24 @@
     {
       "id": 0,
       "board": 0,
-      "title": "Column One",
+      "title": "Column !",
       "order": 0
-    },
-    {
-      "id": 1,
-      "board": 0,
-      "title": "New Column",
-      "order": 1
     }
   ],
   "notes": [
     {
-      "id": "fea86657-bfd6-46fe-82bd-73a258398af0",
+      "id": "0a3ca1cb-43ff-4e83-b40e-a34984fe9be9",
       "board": "board",
       "column": 1,
       "order": 2,
-      "body": "lol"
+      "body": "I love ryan"
+    },
+    {
+      "id": "29f49f62-e6d9-49c4-9fd5-c19e8ecbe472",
+      "board": "board",
+      "column": 0,
+      "order": 2,
+      "body": "Note 1"
     }
   ]
 }
