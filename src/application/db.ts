@@ -1,15 +1,10 @@
 import { JSONFilePreset } from "lowdb/node";
-import { Board, Column, Note } from "./board";
-
-export type BoardData = {
-  board: Board;
-  columns: Column[];
-  notes: Note[];
-};
+import { BoardData } from "~/components/Board";
+import crypto from "crypto";
 
 const mock: BoardData = {
   board: {
-    id: 0,
+    id: crypto.randomUUID(),
     title: "Board 0",
   },
   columns: [],
