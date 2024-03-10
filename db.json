@@ -1,0 +1,44 @@
+{
+  "board": {
+    "id": 0,
+    "title": "Board 0"
+  },
+  "columns": [
+    {
+      "id": 0,
+      "board": 0,
+      "title": "Column 0",
+      "order": 0
+    }
+  ],
+  "notes": [
+    {
+      "id": 0,
+      "board": 0,
+      "column": 0,
+      "order": 0,
+      "body": "Note 0"
+    },
+    {
+      "id": 7,
+      "board": 0,
+      "column": 0,
+      "order": 7,
+      "body": "Note 7"
+    },
+    {
+      "id": 8,
+      "board": 0,
+      "column": 0,
+      "order": 8,
+      "body": "Note 8"
+    },
+    {
+      "id": 9,
+      "board": 0,
+      "column": 0,
+      "order": 9,
+      "body": "Note 9"
+    }
+  ]
+}

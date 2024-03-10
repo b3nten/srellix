@@ -5,23 +5,22 @@ export type BoardId = number;
 
 export type Note = {
     id: NoteId,
-    column: ColumnId,
     board: BoardId,
-    title: string,
+    column: ColumnId,
+    order: Order,
     body: string,
 }
 
 export type Column = {
+    id: ColumnId,
     board: BoardId,
-    order: Order,
     title: string,
-    notes: Array<[Order, NoteId]>,
+    order: Order,
 }
 
 export type Board = {
     id: BoardId,
     title: string,
-    columns: Array<[Order, ColumnId]>,
 }
 
 export enum Actions {
@@ -43,14 +42,17 @@ export interface Action {
     timestamp: number,
     payload: unknown
 }
+
 export interface BoardAction {
     type: Actions.createBoard | Actions.updateBoard | Actions.deleteBoard,
     payload: Board,
 }
+
 export interface ColumnAction extends Action {
     type: Actions.createColumn | Actions.updateColumn | Actions.deleteColumn,
     payload: Column,
 }
+
 export interface NoteAction extends Action {
     type: Actions.createNote | Actions.updateNote | Actions.deleteNote,
     payload: Note,

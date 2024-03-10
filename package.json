@@ -13,6 +13,10 @@
     "@solidjs/router": "^0.12.5",
     "@solidjs/start": "^0.6.1",
     "@unocss/reset": "^0.58.5",
+    "better-sqlite3": "^9.4.3",
+    "immer": "^10.0.4",
+    "kysely": "^0.27.3",
+    "lowdb": "^7.0.1",
     "solid-icons": "^1.1.0",
     "solid-js": "^1.8.15",
     "unimport": "^3.7.1",
@@ -23,6 +27,7 @@
     "node": ">=18"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.9",
     "@unscatty/unocss-preset-daisy": "^1.0.0",
     "unocss": "^0.58.5"
   }

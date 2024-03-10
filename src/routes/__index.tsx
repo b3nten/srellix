@@ -30,7 +30,7 @@ const update = action(async (value: string) => {
 
 const getData = cache(async () => {
 	"use server";
-	return getStuff();
+	return {data: await getStuff()}
 }, "data")
 
 export const route: RouteDefinition = {
@@ -38,7 +38,9 @@ export const route: RouteDefinition = {
 };
 
 export default function Test() {
-	const data = createAsync(() => getData());
+	const data = createAsync(() => getData())
+
+	data()?.data
 
 	const a = useAction(update);
 	const s = useSubmissions(update, () => true);
