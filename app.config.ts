@@ -5,6 +5,9 @@ export default defineConfig({
   vite: {
     plugins: [
       unocss()
-    ]
+    ],
+    build: {
+      target: "esnext",
+    }
   }
 });

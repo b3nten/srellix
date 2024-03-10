@@ -45,7 +45,6 @@ const deleteColumn: Actions["deleteColumn"] = action(async (id, timestamp: numbe
 const createNote: Actions["createNote"] = action(
   async ({id, column, body, order, timestamp, board}) => {
     "use server";
-    await new Promise((r) => setTimeout(r, 3000));
     db.data.notes.push({
       id,
       board,
@@ -71,7 +70,6 @@ const editNote: Actions["editNote"] = action(
 const moveNote: Actions["moveNote"] = action(
   async (note, column, order, timestamp) => {
     "use server";
-    await new Promise((r) => setTimeout(r, 3000));
     const index = db.data.notes.findIndex((n) => n.id === note);
     db.data.notes[index].column = column;
     db.data.notes[index].order = order;
@@ -82,7 +80,6 @@ const moveNote: Actions["moveNote"] = action(
 
 const deleteNote: Actions["deleteNote"] = action(async (id, timestamp) => {
   "use server";
-  await new Promise((r) => setTimeout(r, 3000));
   const index = db.data.notes.findIndex((n) => n.id === id);
   db.data.notes.splice(index, 1);
   await db.write();
