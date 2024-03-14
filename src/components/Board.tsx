@@ -10,10 +10,10 @@ import {
   useContext,
 } from "solid-js";
 import { Action, useAction, useSubmissions } from "@solidjs/router";
-import { Popover } from "@kobalte/core";
-import { BsPlus, BsThreeDotsVertical } from "solid-icons/bs";
+import { BsPlus, BsThreeDotsVertical, BsTrash } from "solid-icons/bs";
 import { RiEditorDraggable } from "solid-icons/ri";
 import { createStore, reconcile } from "solid-js/store";
+import { createAutoAnimate } from "@formkit/auto-animate/solid"
 
 export type ID = string;
 export type Order = number;
@@ -131,7 +131,7 @@ export function Board(props: { board: BoardData; actions: Actions }) {
       });
     }
 
-    for(const note of moveNoteSubmission.values()) {
+    for (const note of moveNoteSubmission.values()) {
       if (!note.pending) continue;
       const [id, column, order, timestamp] = note.input;
       mutations.push({
@@ -143,7 +143,7 @@ export function Board(props: { board: BoardData; actions: Actions }) {
       });
     }
 
-    for(const note of editNoteSubmission.values()) {
+    for (const note of editNoteSubmission.values()) {
       if (!note.pending) continue;
       const [id, content, timestamp] = note.input;
       mutations.push({
@@ -212,7 +212,11 @@ export function Board(props: { board: BoardData; actions: Actions }) {
         case "moveNote": {
           const index = newNotes.findIndex((n) => n.id === mut.id);
           if (index === -1) break;
-          newNotes[index] = { ...newNotes[index], column: mut.column, order: mut.order };
+          newNotes[index] = {
+            ...newNotes[index],
+            column: mut.column,
+            order: mut.order,
+          };
           break;
         }
         case "editNote": {
@@ -245,8 +249,6 @@ export function Board(props: { board: BoardData; actions: Actions }) {
       }
     }
 
-    console.log("newNotes", newNotes, "mutations", mutations);
-
     batch(() => {
       setBoardStore("notes", reconcile(newNotes));
       setBoardStore("columns", reconcile(newColumns));
@@ -268,6 +270,7 @@ export function Board(props: { board: BoardData; actions: Actions }) {
 
 function Column(props: { column: Column }) {
   const ctx = useBoard();
+  const [parent] = createAutoAnimate()
 
   const renameAction = useAction(ctx.actions.renameColumn);
   const deleteAction = useAction(ctx.actions.deleteColumn);
@@ -276,12 +279,14 @@ function Column(props: { column: Column }) {
   const [acceptDrop, setAcceptDrop] = createSignal(false);
 
   const filteredNotes = createMemo(() =>
-    ctx.notes.filter((n) => n.column === props.column.id)
+    ctx.notes
+      .filter((n) => n.column === props.column.id)
+      .sort((a, b) => a.order - b.order)
   );
 
   return (
     <div
-      class="w-full max-w-[300px] shrink-0 rounded-lg"
+      class="w-full max-w-[300px] shrink-0 card"
       style={{
         border: acceptDrop() ? "2px solid red" : "none",
       }}
@@ -295,11 +300,14 @@ function Column(props: { column: Column }) {
         e.preventDefault();
         const noteId = e.dataTransfer?.getData("text/plain");
 
-        if (noteId) {
+        if (noteId && !filteredNotes().find((n) => n.id === noteId)) {
           moveNoteAction(
             noteId,
             props.column.id,
-            ctx.notes.length + 1,
+            getIndexBetween(
+              filteredNotes()[filteredNotes().length - 1]?.order,
+              undefined
+            ),
             new Date().getTime()
           );
         }
@@ -318,13 +326,22 @@ function Column(props: { column: Column }) {
             renameAction(props.column.id, e.target.value, new Date().getTime())
           }
         />
-        <NoteMenu
-          delete={() => deleteAction(props.column.id, new Date().getTime())}
-        />
+        <button
+          class="btn btn-ghost btn-sm btn-circle"
+          onClick={() => deleteAction(props.column.id, new Date().getTime())}
+        >
+          <BsTrash />
+        </button>
       </div>
-      <div class="flex flex-col space-y-2">
+      <div class="flex flex-col space-y-2" ref={parent}>
         <For each={filteredNotes()}>
-          {(n) => <Note note={n} previous={1} next={1} />}
+          {(n, i) => (
+            <Note
+              note={n}
+              previous={filteredNotes()[i() - 1]}
+              next={filteredNotes()[i() + 1]}
+            />
+          )}
         </For>
       </div>
       <div class="py-2" />
@@ -333,7 +350,39 @@ function Column(props: { column: Column }) {
   );
 }
 
-function Note(props: { note: Note; previous: number; next: number }) {
+function getIndicesBetween(
+  below: number | undefined,
+  above: number | undefined,
+  n: number = 1
+) {
+  let start: number;
+  let step: number;
+  if (typeof below === "number" && below === above) {
+    throw new Error(`below ${below} and above ${above} cannot be the same`);
+  }
+  if (below !== undefined && above !== undefined) {
+    // Put items between
+    step = (above - below) / (n + 1);
+    start = below + step;
+  } else if (below === undefined && above !== undefined) {
+    // Put items below (bottom of the list)
+    step = above / (n + 1);
+    start = step;
+  } else if (below !== undefined && above === undefined) {
+    // Put items above (top of the list)
+    start = below + 1;
+    step = 1;
+  } else {
+    return Array.from(Array(n)).map((_, i) => i + 1);
+  }
+  return Array.from(Array(n)).map((_, i) => start + i * step);
+}
+const getIndexBetween = (
+  below: number | undefined,
+  above: number | undefined
+) => getIndicesBetween(below, above, 1)[0];
+
+function Note(props: { note: Note; previous?: Note; next?: Note }) {
   const { actions } = useBoard();
 
   const updateAction = useAction(actions.editNote);
@@ -347,6 +396,14 @@ function Note(props: { note: Note; previous: number; next: number }) {
   const [acceptDrop, setAcceptDrop] = createSignal<"top" | "bottom" | false>(
     false
   );
+
+  createEffect(() => {
+    console.log({
+      note: props.note.body,
+      previous: props.previous,
+      next: props.next,
+    });
+  });
 
   return (
     <div
@@ -386,22 +443,27 @@ function Note(props: { note: Note; previous: number; next: number }) {
       onDrop={(e) => {
         e.preventDefault();
         e.stopPropagation();
-
         const noteId = e.dataTransfer?.getData("text/plain");
-        if (noteId) {
-          // using fractional order to avoid conflicts
-          const droppedOrder =
-            acceptDrop() === "top" ? props.previous : props.next;
-          const order = (droppedOrder + props.note.order) / 2;
+        action: if (noteId && noteId !== props.note.id) {
+          if (acceptDrop() === "top") {
+            if (props.previous && props.previous?.id === noteId) {
+              break action;
+            }
+          }
+
+          if (acceptDrop() === "bottom") {
+            if (props.previous && props.next?.id === noteId) {
+              break action;
+            }
+          }
 
           moveNoteAction(
             noteId,
             props.note.column,
-            order,
+            getIndexBetween(props.previous?.order, props.next?.order),
             new Date().getTime()
           );
         }
-
         setAcceptDrop(false);
       }}
     >
@@ -424,9 +486,12 @@ function Note(props: { note: Note; previous: number; next: number }) {
       >
         {`${props.note.body}`}
       </textarea>
-      <NoteMenu
-        delete={() => deleteAction(props.note.id, new Date().getTime())}
-      />
+      <button
+        class="btn btn-ghost btn-sm btn-circle"
+        onClick={() => deleteAction(props.note.id, new Date().getTime())}
+      >
+        <BsTrash />
+      </button>
     </div>
   );
 }
@@ -530,29 +595,5 @@ function AddColumn(props: { board: ID }) {
         </button>
       </Match>
     </Switch>
-  );
-}
-
-function NoteMenu(props: { delete?: Function }) {
-  return (
-    <Popover.Root>
-      <Popover.Trigger>
-        <BsThreeDotsVertical />
-      </Popover.Trigger>
-      <Popover.Portal>
-        <Popover.Content class="bg-base-300 p-1 rounded-md">
-          <Popover.Description>
-            <Popover.CloseButton>
-              <button
-                class="btn btn-error btn-sm"
-                onClick={() => props.delete?.()}
-              >
-                Delete
-              </button>
-            </Popover.CloseButton>
-          </Popover.Description>
-        </Popover.Content>
-      </Popover.Portal>
-    </Popover.Root>
   );
 }
