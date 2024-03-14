@@ -449,20 +449,31 @@ function Note(props: { note: Note; previous?: Note; next?: Note }) {
             if (props.previous && props.previous?.id === noteId) {
               break action;
             }
+            moveNoteAction(
+              noteId,
+              props.note.column,
+              getIndexBetween(props.previous?.order, props.note.order),
+              new Date().getTime()
+            );
           }
 
           if (acceptDrop() === "bottom") {
             if (props.previous && props.next?.id === noteId) {
               break action;
             }
+            moveNoteAction(
+              noteId,
+              props.note.column,
+              getIndexBetween(props.note.order, props.next?.order),
+              new Date().getTime()
+            );
           }
-
-          moveNoteAction(
-            noteId,
-            props.note.column,
-            getIndexBetween(props.previous?.order, props.next?.order),
-            new Date().getTime()
-          );
+          // moveNoteAction(
+          //   noteId,
+          //   props.note.column,
+          //   getIndexBetween(props.previous?.order, props.next?.order),
+          //   new Date().getTime()
+          // );
         }
         setAcceptDrop(false);
       }}
