@@ -28,8 +28,8 @@
     {
       "id": "86553486-ae94-4ebc-be20-4bbb51d16afd",
       "board": "board",
-      "column": "2c6fe7bb-8db4-42b0-b785-3b9a86e3fb15",
-      "order": 2,
+      "column": "fe6ca6d1-5970-4202-a509-0bbf9ec7d8c3",
+      "order": 0.625,
       "body": "Salmon"
     },
     {
@@ -42,22 +42,22 @@
     {
       "id": "07bd76a3-f453-4b64-b709-6acd2a35c3f6",
       "board": "board",
-      "column": "2c6fe7bb-8db4-42b0-b785-3b9a86e3fb15",
-      "order": 4,
+      "column": "fe6ca6d1-5970-4202-a509-0bbf9ec7d8c3",
+      "order": 0.75,
       "body": "Wine"
     },
     {
       "id": "d059d8cd-ff9d-494f-9bc9-af3a1d8b2a11",
       "board": "board",
       "column": "2c6fe7bb-8db4-42b0-b785-3b9a86e3fb15",
-      "order": 5,
+      "order": 1,
       "body": "Tomatoes"
     },
     {
       "id": "9a01ec5f-9338-44e6-b180-a3c2a5b28de8",
       "board": "board",
-      "column": "fe6ca6d1-5970-4202-a509-0bbf9ec7d8c3",
-      "order": 1,
+      "column": "2c6fe7bb-8db4-42b0-b785-3b9a86e3fb15",
+      "order": 3,
       "body": "Cereal"
     }
   ]

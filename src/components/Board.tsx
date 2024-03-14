@@ -13,7 +13,7 @@ import { Action, useAction, useSubmissions } from "@solidjs/router";
 import { BsPlus, BsThreeDotsVertical, BsTrash } from "solid-icons/bs";
 import { RiEditorDraggable } from "solid-icons/ri";
 import { createStore, reconcile } from "solid-js/store";
-import { createAutoAnimate } from "@formkit/auto-animate/solid"
+import { createAutoAnimate } from "@formkit/auto-animate/solid";
 
 export type ID = string;
 export type Order = number;
@@ -270,7 +270,7 @@ export function Board(props: { board: BoardData; actions: Actions }) {
 
 function Column(props: { column: Column }) {
   const ctx = useBoard();
-  const [parent] = createAutoAnimate()
+  const [parent] = createAutoAnimate();
 
   const renameAction = useAction(ctx.actions.renameColumn);
   const deleteAction = useAction(ctx.actions.deleteColumn);
@@ -295,21 +295,24 @@ function Column(props: { column: Column }) {
         e.preventDefault();
         setAcceptDrop(true);
       }}
+      onDragLeave={(e) => setAcceptDrop(false)}
       onDragExit={(e) => setAcceptDrop(false)}
       onDrop={(e) => {
         e.preventDefault();
-        const noteId = e.dataTransfer?.getData("text/plain");
+        if (e.dataTransfer?.types.includes("application/note")) {
+          const noteId = e.dataTransfer?.getData("application/note");
 
-        if (noteId && !filteredNotes().find((n) => n.id === noteId)) {
-          moveNoteAction(
-            noteId,
-            props.column.id,
-            getIndexBetween(
-              filteredNotes()[filteredNotes().length - 1]?.order,
-              undefined
-            ),
-            new Date().getTime()
-          );
+          if (noteId && !filteredNotes().find((n) => n.id === noteId)) {
+            moveNoteAction(
+              noteId,
+              props.column.id,
+              getIndexBetween(
+                filteredNotes()[filteredNotes().length - 1]?.order,
+                undefined
+              ),
+              new Date().getTime()
+            );
+          }
         }
 
         setAcceptDrop(false);
@@ -415,7 +418,7 @@ function Note(props: { note: Note; previous?: Note; next?: Note }) {
       draggable="true"
       class="card card-side px-1 py-2 w-full bg-base-200 text-lg flex justify-between items-center space-x-1"
       onDragStart={(e) => {
-        e.dataTransfer?.setData("text/plain", props.note.id.toString());
+        e.dataTransfer?.setData("application/note", props.note.id.toString());
       }}
       onDrag={(e) => {
         setIsBeingDragged(true);
@@ -440,41 +443,42 @@ function Note(props: { note: Note; previous?: Note; next?: Note }) {
       onDragExit={(e) => {
         setAcceptDrop(false);
       }}
+      onDragLeave={(e) => {
+        setAcceptDrop(false);
+      }}
       onDrop={(e) => {
         e.preventDefault();
         e.stopPropagation();
-        const noteId = e.dataTransfer?.getData("text/plain");
-        action: if (noteId && noteId !== props.note.id) {
-          if (acceptDrop() === "top") {
-            if (props.previous && props.previous?.id === noteId) {
-              break action;
-            }
-            moveNoteAction(
-              noteId,
-              props.note.column,
-              getIndexBetween(props.previous?.order, props.note.order),
-              new Date().getTime()
-            );
-          }
+        if (e.dataTransfer?.types.includes("application/note")) {
+          const noteId = e.dataTransfer?.getData("application/note");
 
-          if (acceptDrop() === "bottom") {
-            if (props.previous && props.next?.id === noteId) {
-              break action;
+          action: if (noteId && noteId !== props.note.id) {
+            if (acceptDrop() === "top") {
+              if (props.previous && props.previous?.id === noteId) {
+                break action;
+              }
+              moveNoteAction(
+                noteId,
+                props.note.column,
+                getIndexBetween(props.previous?.order, props.note.order),
+                new Date().getTime()
+              );
             }
-            moveNoteAction(
-              noteId,
-              props.note.column,
-              getIndexBetween(props.note.order, props.next?.order),
-              new Date().getTime()
-            );
+
+            if (acceptDrop() === "bottom") {
+              if (props.previous && props.next?.id === noteId) {
+                break action;
+              }
+              moveNoteAction(
+                noteId,
+                props.note.column,
+                getIndexBetween(props.note.order, props.next?.order),
+                new Date().getTime()
+              );
+            }
           }
-          // moveNoteAction(
-          //   noteId,
-          //   props.note.column,
-          //   getIndexBetween(props.previous?.order, props.next?.order),
-          //   new Date().getTime()
-          // );
         }
+
         setAcceptDrop(false);
       }}
     >
