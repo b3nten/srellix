@@ -318,10 +318,8 @@ export function Board(props: { board: BoardData; actions: Actions }) {
 
   return (
     <BoardContext.Provider value={boardStore}>
-      <div class="min-w-full overflow-scroll min-h-screen p-12 flex flex-start items-start flex-nowrap">
-        <ColumnGap
-          right={sortedColumns()[0]}
-        />
+      <div class="min-w-full h-full overflow-x-auto overflow-y-hidden p-12 flex flex-start items-start flex-nowrap">
+        <ColumnGap right={sortedColumns()[0]} />
         <For each={sortedColumns()}>
           {(column, i) => (
             <>
@@ -345,10 +343,10 @@ function ColumnGap(props: { left?: Column; right?: Column }) {
   const moveColumnAction = useAction(ctx.actions.moveColumn);
   return (
     <div
-      class="w-10 mx-1 rounded-lg"
+      class="w-10 h-full mx-1 rounded-lg transition"
       style={{
         background: "red",
-        opacity: active() ? 1 : 0.1,
+        opacity: active() ? .2 : 0,
       }}
       onDragEnter={(e) => e.preventDefault()}
       onDragOver={(e) => {
@@ -365,12 +363,13 @@ function ColumnGap(props: { left?: Column; right?: Column }) {
         if (e.dataTransfer?.types.includes(DragTypes.Column)) {
           const columnId = e.dataTransfer?.getData(DragTypes.Column);
           if (columnId) {
-            if(columnId === props.left?.id || columnId === props.right?.id) return;
+            if (columnId === props.left?.id || columnId === props.right?.id)
+              return;
             const newOrder = getIndexBetween(
               props.left?.order,
               props.right?.order
             );
-            moveColumnAction(columnId, newOrder, new Date().getTime()); 
+            moveColumnAction(columnId, newOrder, new Date().getTime());
           }
         }
       }}
@@ -380,7 +379,8 @@ function ColumnGap(props: { left?: Column; right?: Column }) {
 
 function Column(props: { column: Column }) {
   const ctx = useBoard();
-  const [parent] = createAutoAnimate();
+
+  let parent: HTMLDivElement | undefined;
 
   const renameAction = useAction(ctx.actions.renameColumn);
   const deleteAction = useAction(ctx.actions.deleteColumn);
@@ -397,7 +397,7 @@ function Column(props: { column: Column }) {
   return (
     <div
       draggable="true"
-      class="w-full max-w-[300px] shrink-0 card"
+      class="w-full h-full max-w-[300px] shrink-0 card"
       style={{
         border: acceptDrop() === true ? "2px solid red" : "none",
       }}
@@ -451,7 +451,7 @@ function Column(props: { column: Column }) {
           <BsTrash />
         </button>
       </div>
-      <div class="flex flex-col space-y-2" ref={parent}>
+      <div class="flex h-full flex-col space-y-2 overflow-y-auto px-1" ref={parent}>
         <For each={filteredNotes()}>
           {(n, i) => (
             <Note
@@ -461,9 +461,9 @@ function Column(props: { column: Column }) {
             />
           )}
         </For>
-        <div class="py-2" />
-        <AddNote column={props.column.id} length={ctx.notes.length} />
       </div>
+      <div class="py-2" />
+      <AddNote column={props.column.id} length={ctx.notes.length} />
     </div>
   );
 }

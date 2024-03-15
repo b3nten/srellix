@@ -4,18 +4,9 @@
     "title": "Board 0"
   },
   "columns": [
-    {
-      "id": "8295aed3-58d1-4761-aa2a-8bc8c337f2ed",
-      "board": 0,
-      "title": "A",
-      "order": 0.5
-    },
-    {
-      "id": "1b5b104e-5235-4f08-be4b-7096b77cc10d",
-      "board": 0,
-      "title": "B",
-      "order": 1
-    }
+
   ],
-  "notes": []
+  "notes": [
+    
+  ]
 }
