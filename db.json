@@ -5,60 +5,17 @@
   },
   "columns": [
     {
-      "id": "2c6fe7bb-8db4-42b0-b785-3b9a86e3fb15",
+      "id": "8295aed3-58d1-4761-aa2a-8bc8c337f2ed",
       "board": 0,
-      "title": "Groceries To Buy",
-      "order": 0
+      "title": "A",
+      "order": 0.5
     },
     {
-      "id": "fe6ca6d1-5970-4202-a509-0bbf9ec7d8c3",
+      "id": "1b5b104e-5235-4f08-be4b-7096b77cc10d",
       "board": 0,
-      "title": "Groceries in Cart",
+      "title": "B",
       "order": 1
     }
   ],
-  "notes": [
-    {
-      "id": "0eb7187e-83f0-4478-bad9-da04b2a28b4c",
-      "board": "board",
-      "column": "fe6ca6d1-5970-4202-a509-0bbf9ec7d8c3",
-      "order": 2,
-      "body": "Milk"
-    },
-    {
-      "id": "86553486-ae94-4ebc-be20-4bbb51d16afd",
-      "board": "board",
-      "column": "fe6ca6d1-5970-4202-a509-0bbf9ec7d8c3",
-      "order": 0.625,
-      "body": "Salmon"
-    },
-    {
-      "id": "0635a459-fccd-4b22-8e7a-1b5580c8d59e",
-      "board": "board",
-      "column": "fe6ca6d1-5970-4202-a509-0bbf9ec7d8c3",
-      "order": 0.5,
-      "body": "Fish"
-    },
-    {
-      "id": "07bd76a3-f453-4b64-b709-6acd2a35c3f6",
-      "board": "board",
-      "column": "fe6ca6d1-5970-4202-a509-0bbf9ec7d8c3",
-      "order": 0.75,
-      "body": "Wine"
-    },
-    {
-      "id": "d059d8cd-ff9d-494f-9bc9-af3a1d8b2a11",
-      "board": "board",
-      "column": "2c6fe7bb-8db4-42b0-b785-3b9a86e3fb15",
-      "order": 1,
-      "body": "Tomatoes"
-    },
-    {
-      "id": "9a01ec5f-9338-44e6-b180-a3c2a5b28de8",
-      "board": "board",
-      "column": "2c6fe7bb-8db4-42b0-b785-3b9a86e3fb15",
-      "order": 3,
-      "body": "Cereal"
-    }
-  ]
+  "notes": []
 }

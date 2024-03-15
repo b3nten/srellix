@@ -5,7 +5,7 @@ import {
   createAsync,
 } from "@solidjs/router";
 import { Show } from "solid-js";
-import { Column, Board, type Actions } from "~/components/Board";
+import { Board, type Actions } from "~/components/Board";
 import { db } from "~/application/db";
 
 const createColumn: Actions["createColumn"] = action(async (id, board, title) => {
@@ -31,7 +31,14 @@ const renameColumn: Actions["renameColumn"] = action(
   }
 );
 
-const moveColumn: Actions["moveColumn"] = action(async (column, order) => {});
+const moveColumn: Actions["moveColumn"] = action(async (id, order, timestamp) => {
+  "use server";
+  const column = db.data.columns.find((c) => c.id === id);
+  if (!column) return;
+  column.order = order;
+  await db.write();
+  return;
+});
 
 const deleteColumn: Actions["deleteColumn"] = action(async (id, timestamp: number) => {
   "use server";

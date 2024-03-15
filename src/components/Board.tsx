@@ -7,6 +7,7 @@ import {
   createEffect,
   createMemo,
   createSignal,
+  on,
   useContext,
 } from "solid-js";
 import { Action, useAction, useSubmissions } from "@solidjs/router";
@@ -14,6 +15,11 @@ import { BsPlus, BsThreeDotsVertical, BsTrash } from "solid-icons/bs";
 import { RiEditorDraggable } from "solid-icons/ri";
 import { createStore, reconcile } from "solid-js/store";
 import { createAutoAnimate } from "@formkit/auto-animate/solid";
+
+enum DragTypes {
+  Note = "application/note",
+  Column = "application/column",
+}
 
 export type ID = string;
 export type Order = number;
@@ -33,6 +39,38 @@ export type Column = {
   order: Order;
 };
 
+function getIndicesBetween(
+  below: number | undefined,
+  above: number | undefined,
+  n: number = 1
+) {
+  let start: number;
+  let step: number;
+  if (typeof below === "number" && below === above) {
+    throw new Error(`below ${below} and above ${above} cannot be the same`);
+  }
+  if (below !== undefined && above !== undefined) {
+    // Put items between
+    step = (above - below) / (n + 1);
+    start = below + step;
+  } else if (below === undefined && above !== undefined) {
+    // Put items below (bottom of the list)
+    step = above / (n + 1);
+    start = step;
+  } else if (below !== undefined && above === undefined) {
+    // Put items above (top of the list)
+    start = below + 1;
+    step = 1;
+  } else {
+    return Array.from(Array(n)).map((_, i) => i + 1);
+  }
+  return Array.from(Array(n)).map((_, i) => start + i * step);
+}
+const getIndexBetween = (
+  below: number | undefined,
+  above: number | undefined
+) => getIndicesBetween(below, above, 1)[0];
+
 export type Board = {
   id: ID;
   title: string;
@@ -50,7 +88,7 @@ export type Actions = {
     boolean
   >;
   renameColumn: Action<[id: ID, title: string, timestamp: number], boolean>;
-  moveColumn: Action<[column: ID, order: Order], void>;
+  moveColumn: Action<[column: ID, order: Order, timestamp: number], void>;
   deleteColumn: Action<[id: ID, timestamp: number], boolean>;
   createNote: Action<
     [
@@ -85,7 +123,7 @@ const BoardContext = createContext<
 
 const useBoard = () => {
   const context = useContext(BoardContext);
-  if (!context) throw new Error("No context provided");
+  if (!context) throw new Error("No board context provided. This is a bug.");
   return context;
 };
 
@@ -98,12 +136,13 @@ export function Board(props: { board: BoardData; actions: Actions }) {
   });
 
   const createNoteSubmission = useSubmissions(props.actions.createNote);
-  const createColumnSubmission = useSubmissions(props.actions.createColumn);
-  const renameColumnSubmission = useSubmissions(props.actions.renameColumn);
-  const deleteColumnSubmission = useSubmissions(props.actions.deleteColumn);
   const editNoteSubmission = useSubmissions(props.actions.editNote);
   const moveNoteSubmission = useSubmissions(props.actions.moveNote);
   const deleteNoteSubmission = useSubmissions(props.actions.deleteNote);
+  const createColumnSubmission = useSubmissions(props.actions.createColumn);
+  const renameColumnSubmission = useSubmissions(props.actions.renameColumn);
+  const moveColumnSubmission = useSubmissions(props.actions.moveColumn);
+  const deleteColumnSubmission = useSubmissions(props.actions.deleteColumn);
 
   createEffect(() => {
     const mutations: any[] = [];
@@ -121,12 +160,13 @@ export function Board(props: { board: BoardData; actions: Actions }) {
       });
     }
 
-    for (const note of deleteNoteSubmission.values()) {
+    for (const note of editNoteSubmission.values()) {
       if (!note.pending) continue;
-      const [id, timestamp] = note.input;
+      const [id, content, timestamp] = note.input;
       mutations.push({
-        type: "deleteNote",
+        type: "editNote",
         id,
+        content,
         timestamp,
       });
     }
@@ -143,13 +183,12 @@ export function Board(props: { board: BoardData; actions: Actions }) {
       });
     }
 
-    for (const note of editNoteSubmission.values()) {
+    for (const note of deleteNoteSubmission.values()) {
       if (!note.pending) continue;
-      const [id, content, timestamp] = note.input;
+      const [id, timestamp] = note.input;
       mutations.push({
-        type: "editNote",
+        type: "deleteNote",
         id,
-        content,
         timestamp,
       });
     }
@@ -173,6 +212,17 @@ export function Board(props: { board: BoardData; actions: Actions }) {
         type: "renameColumn",
         id,
         title,
+        timestamp,
+      });
+    }
+
+    for (const column of moveColumnSubmission.values()) {
+      if (!column.pending) continue;
+      const [id, order, timestamp] = column.input;
+      mutations.push({
+        type: "moveColumn",
+        id,
+        order,
         timestamp,
       });
     }
@@ -203,12 +253,6 @@ export function Board(props: { board: BoardData; actions: Actions }) {
           });
           break;
         }
-        case "deleteNote": {
-          const index = newNotes.findIndex((n) => n.id === mut.id);
-          if (index === -1) break;
-          newNotes.splice(index, 1);
-          break;
-        }
         case "moveNote": {
           const index = newNotes.findIndex((n) => n.id === mut.id);
           if (index === -1) break;
@@ -225,6 +269,12 @@ export function Board(props: { board: BoardData; actions: Actions }) {
           newNotes[index] = { ...newNotes[index], body: mut.content };
           break;
         }
+        case "deleteNote": {
+          const index = newNotes.findIndex((n) => n.id === mut.id);
+          if (index === -1) break;
+          newNotes.splice(index, 1);
+          break;
+        }
         case "createColumn": {
           newColumns.push({
             id: mut.id,
@@ -238,6 +288,12 @@ export function Board(props: { board: BoardData; actions: Actions }) {
           const index = newColumns.findIndex((c) => c.id === mut.id);
           if (index === -1) break;
           newColumns[index] = { ...newColumns[index], title: mut.title };
+          break;
+        }
+        case "moveColumn": {
+          const index = newColumns.findIndex((c) => c.id === mut.id);
+          if (index === -1) break;
+          newColumns[index] = { ...newColumns[index], order: mut.order };
           break;
         }
         case "deleteColumn": {
@@ -256,15 +312,69 @@ export function Board(props: { board: BoardData; actions: Actions }) {
     });
   });
 
+  const sortedColumns = createMemo(() =>
+    boardStore.columns.slice().sort((a, b) => a.order - b.order)
+  );
+
   return (
     <BoardContext.Provider value={boardStore}>
-      <div class="min-w-full overflow-scroll min-h-screen p-12 flex flex-start items-start space-x-12 flex-nowrap">
-        <For each={boardStore.columns}>
-          {(column) => <Column column={column} />}
+      <div class="min-w-full overflow-scroll min-h-screen p-12 flex flex-start items-start flex-nowrap">
+        <ColumnGap
+          right={sortedColumns()[0]}
+        />
+        <For each={sortedColumns()}>
+          {(column, i) => (
+            <>
+              <Column column={column} />
+              <ColumnGap
+                left={sortedColumns()[i()]}
+                right={sortedColumns()[i() + 1]}
+              />
+            </>
+          )}
         </For>
         <AddColumn board={props.board.board.id} />
       </div>
     </BoardContext.Provider>
+  );
+}
+
+function ColumnGap(props: { left?: Column; right?: Column }) {
+  const [active, setActive] = createSignal(false);
+  const ctx = useBoard();
+  const moveColumnAction = useAction(ctx.actions.moveColumn);
+  return (
+    <div
+      class="w-10 mx-1 rounded-lg"
+      style={{
+        background: "red",
+        opacity: active() ? 1 : 0.1,
+      }}
+      onDragEnter={(e) => e.preventDefault()}
+      onDragOver={(e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        setActive(true);
+      }}
+      onDragLeave={(e) => setActive(false)}
+      onDragExit={(e) => setActive(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setActive(false);
+
+        if (e.dataTransfer?.types.includes(DragTypes.Column)) {
+          const columnId = e.dataTransfer?.getData(DragTypes.Column);
+          if (columnId) {
+            if(columnId === props.left?.id || columnId === props.right?.id) return;
+            const newOrder = getIndexBetween(
+              props.left?.order,
+              props.right?.order
+            );
+            moveColumnAction(columnId, newOrder, new Date().getTime()); 
+          }
+        }
+      }}
+    />
   );
 }
 
@@ -276,7 +386,7 @@ function Column(props: { column: Column }) {
   const deleteAction = useAction(ctx.actions.deleteColumn);
   const moveNoteAction = useAction(ctx.actions.moveNote);
 
-  const [acceptDrop, setAcceptDrop] = createSignal(false);
+  const [acceptDrop, setAcceptDrop] = createSignal<boolean>(false);
 
   const filteredNotes = createMemo(() =>
     ctx.notes
@@ -286,22 +396,28 @@ function Column(props: { column: Column }) {
 
   return (
     <div
+      draggable="true"
       class="w-full max-w-[300px] shrink-0 card"
       style={{
-        border: acceptDrop() ? "2px solid red" : "none",
+        border: acceptDrop() === true ? "2px solid red" : "none",
+      }}
+      onDragStart={(e) => {
+        e.dataTransfer?.setData(DragTypes.Column, props.column.id);
       }}
       onDragEnter={(e) => e.preventDefault()}
       onDragOver={(e) => {
         e.preventDefault();
-        setAcceptDrop(true);
+        if (e.dataTransfer?.types.includes(DragTypes.Note)) {
+          setAcceptDrop(true);
+          return;
+        }
       }}
       onDragLeave={(e) => setAcceptDrop(false)}
       onDragExit={(e) => setAcceptDrop(false)}
       onDrop={(e) => {
         e.preventDefault();
-        if (e.dataTransfer?.types.includes("application/note")) {
-          const noteId = e.dataTransfer?.getData("application/note");
-
+        if (e.dataTransfer?.types.includes(DragTypes.Note)) {
+          const noteId = e.dataTransfer?.getData(DragTypes.Note);
           if (noteId && !filteredNotes().find((n) => n.id === noteId)) {
             moveNoteAction(
               noteId,
@@ -314,7 +430,6 @@ function Column(props: { column: Column }) {
             );
           }
         }
-
         setAcceptDrop(false);
       }}
     >
@@ -346,44 +461,12 @@ function Column(props: { column: Column }) {
             />
           )}
         </For>
+        <div class="py-2" />
+        <AddNote column={props.column.id} length={ctx.notes.length} />
       </div>
-      <div class="py-2" />
-      <AddNote column={props.column.id} length={ctx.notes.length} />
     </div>
   );
 }
-
-function getIndicesBetween(
-  below: number | undefined,
-  above: number | undefined,
-  n: number = 1
-) {
-  let start: number;
-  let step: number;
-  if (typeof below === "number" && below === above) {
-    throw new Error(`below ${below} and above ${above} cannot be the same`);
-  }
-  if (below !== undefined && above !== undefined) {
-    // Put items between
-    step = (above - below) / (n + 1);
-    start = below + step;
-  } else if (below === undefined && above !== undefined) {
-    // Put items below (bottom of the list)
-    step = above / (n + 1);
-    start = step;
-  } else if (below !== undefined && above === undefined) {
-    // Put items above (top of the list)
-    start = below + 1;
-    step = 1;
-  } else {
-    return Array.from(Array(n)).map((_, i) => i + 1);
-  }
-  return Array.from(Array(n)).map((_, i) => start + i * step);
-}
-const getIndexBetween = (
-  below: number | undefined,
-  above: number | undefined
-) => getIndicesBetween(below, above, 1)[0];
 
 function Note(props: { note: Note; previous?: Note; next?: Note }) {
   const { actions } = useBoard();
@@ -399,14 +482,6 @@ function Note(props: { note: Note; previous?: Note; next?: Note }) {
   const [acceptDrop, setAcceptDrop] = createSignal<"top" | "bottom" | false>(
     false
   );
-
-  createEffect(() => {
-    console.log({
-      note: props.note.body,
-      previous: props.previous,
-      next: props.next,
-    });
-  });
 
   return (
     <div
@@ -433,6 +508,11 @@ function Note(props: { note: Note; previous?: Note; next?: Note }) {
       onDragOver={(e) => {
         e.preventDefault();
         e.stopPropagation();
+
+        if (!e.dataTransfer?.types.includes(DragTypes.Note)) {
+          setAcceptDrop(false);
+          return;
+        }
 
         const rect = e.currentTarget.getBoundingClientRect();
         const midpoint = (rect.top + rect.bottom) / 2;
