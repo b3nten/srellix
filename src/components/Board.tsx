@@ -657,7 +657,16 @@ function AddColumn(props: { board: ID }) {
   return (
     <Switch>
       <Match when={active()}>
-        <div class="flex flex-col space-y-2 card bg-base-200 p-2 w-full max-w-[300px]">
+        <form onSubmit={(e) => (
+          e.preventDefault(),
+          addColumn(
+            crypto.randomUUID(),
+            props.board,
+            inputRef?.value ?? "Column",
+            new Date().getTime()
+          ),
+          inputRef && (inputRef.value = '')
+        )} class="flex flex-col space-y-2 card bg-base-200 p-2 w-full max-w-[300px]">
           <input
             ref={(el) => {
               (inputRef = el),
@@ -668,24 +677,16 @@ function AddColumn(props: { board: ID }) {
           />
           <div class="space-x-2">
             <button
-              onClick={() => (
-                addColumn(
-                  crypto.randomUUID(),
-                  props.board,
-                  inputRef?.value ?? "Column",
-                  new Date().getTime()
-                ),
-                setActive(false)
-              )}
+              type="submit"
               class="btn btn-success"
             >
               Add
             </button>
-            <button class="btn btn-error" onClick={() => setActive(false)}>
+            <button type="reset" class="btn btn-error" onClick={() => setActive(false)}>
               Cancel
             </button>
           </div>
-        </div>
+        </form>
       </Match>
       <Match when={!active()}>
         <button class="btn btn-circle" onClick={() => setActive(true)}>
