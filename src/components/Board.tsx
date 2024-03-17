@@ -316,9 +316,16 @@ export function Board(props: { board: BoardData; actions: Actions }) {
     boardStore.columns.slice().sort((a, b) => a.order - b.order)
   );
 
+  let scrollContainerRef: HTMLDivElement | undefined;
+
   return (
     <BoardContext.Provider value={boardStore}>
-      <div class="min-w-full h-full overflow-x-auto overflow-y-hidden p-12 flex flex-start items-start flex-nowrap">
+      <div
+        ref={(el) => {
+          scrollContainerRef = el
+        }}
+        class="min-w-full h-full overflow-x-auto overflow-y-hidden p-12 flex flex-start items-start flex-nowrap"
+      >
         <ColumnGap right={sortedColumns()[0]} />
         <For each={sortedColumns()}>
           {(column, i) => (
@@ -331,7 +338,9 @@ export function Board(props: { board: BoardData; actions: Actions }) {
             </>
           )}
         </For>
-        <AddColumn board={props.board.board.id} />
+        <AddColumn board={props.board.board.id} onAdd={() => {
+          scrollContainerRef && (scrollContainerRef.scrollLeft = scrollContainerRef.scrollWidth)
+        }} />
       </div>
     </BoardContext.Provider>
   );
@@ -646,7 +655,7 @@ function AddNote(props: { column: ID; length: number }) {
   );
 }
 
-function AddColumn(props: { board: ID }) {
+function AddColumn(props: { board: ID, onAdd: () => void }) {
   const { actions } = useBoard();
 
   const [active, setActive] = createSignal(false);
@@ -666,7 +675,7 @@ function AddColumn(props: { board: ID }) {
             inputRef?.value ?? "Column",
             new Date().getTime()
           ),
-          inputRef && (inputRef.value = '')
+          inputRef && (inputRef.value = ''), props.onAdd()
         )} class="flex flex-col space-y-2 card bg-base-200 p-2 w-full max-w-[300px]">
           <input
             ref={(el) => {
