@@ -472,7 +472,9 @@ function Column(props: { column: Column }) {
         </For>
       </div>
       <div class="py-2" />
-      <AddNote column={props.column.id} length={ctx.notes.length} />
+      <AddNote column={props.column.id} length={ctx.notes.length} onAdd={() => {
+        parent && (parent.scrollTop = parent.scrollHeight)
+      }} />
     </div>
   );
 }
@@ -600,7 +602,7 @@ function Note(props: { note: Note; previous?: Note; next?: Note }) {
   );
 }
 
-function AddNote(props: { column: ID; length: number }) {
+function AddNote(props: { column: ID; length: number, onAdd: () => void }) {
   const { actions } = useBoard();
   const [active, setActive] = createSignal(false);
   const addNote = useAction(actions.createNote);
@@ -621,6 +623,7 @@ function AddNote(props: { column: ID; length: number }) {
                 timestamp: new Date().getTime(),
               });
               inputRef && (inputRef.value = '')
+              props.onAdd()
             }}
           >
             <input
