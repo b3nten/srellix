@@ -113,11 +113,11 @@ export type Actions = {
 
 const BoardContext = createContext<
   | {
-      board: Board;
-      columns: Column[];
-      notes: Note[];
-      actions: Actions;
-    }
+    board: Board;
+    columns: Column[];
+    notes: Note[];
+    actions: Actions;
+  }
   | undefined
 >();
 
@@ -595,13 +595,26 @@ function AddNote(props: { column: ID; length: number }) {
   const { actions } = useBoard();
   const [active, setActive] = createSignal(false);
   const addNote = useAction(actions.createNote);
-  let inputRef: HTMLTextAreaElement | undefined;
+  let inputRef: HTMLInputElement | undefined;
   return (
     <div class="w-full flex justify-center">
       <Switch>
         <Match when={active()}>
-          <div class="flex flex-col space-y-2 card bg-base-200 p-2 w-full">
-            <textarea
+          <form class="flex flex-col space-y-2 card bg-base-200 p-2 w-full"
+            onSubmit={(e) => {
+              e.preventDefault()
+              addNote({
+                id: crypto.randomUUID(),
+                board: "board",
+                column: props.column,
+                body: inputRef?.value ?? "Note",
+                order: props.length + 1,
+                timestamp: new Date().getTime(),
+              });
+              inputRef && (inputRef.value = '')
+            }}
+          >
+            <input
               ref={(el) => {
                 inputRef = el;
                 setTimeout(() => requestAnimationFrame(() => void el.focus()));
@@ -612,25 +625,15 @@ function AddNote(props: { column: ID; length: number }) {
             <div class="space-x-2">
               <button
                 class="btn btn-success"
-                onClick={() => {
-                  addNote({
-                    id: crypto.randomUUID(),
-                    board: "board",
-                    column: props.column,
-                    body: inputRef?.value ?? "Note",
-                    order: props.length + 1,
-                    timestamp: new Date().getTime(),
-                  });
-                  setActive(false);
-                }}
+                type="submit"
               >
                 Add
               </button>
-              <button class="btn btn-error" onClick={() => setActive(false)}>
+              <button class="btn btn-error" type="reset" onClick={() => setActive(false)}>
                 Cancel
               </button>
             </div>
-          </div>
+          </form>
         </Match>
         <Match when={!active()}>
           <button class="btn btn-circle" onClick={() => setActive(true)}>
