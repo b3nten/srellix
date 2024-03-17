@@ -621,6 +621,7 @@ function AddNote(props: { column: ID; length: number }) {
               }}
               class="textarea"
               placeholder="Add a Note"
+              required
             />
             <div class="space-x-2">
               <button
@@ -674,6 +675,7 @@ function AddColumn(props: { board: ID }) {
             }}
             class="input"
             placeholder="Add a Column"
+            required
           />
           <div class="space-x-2">
             <button
