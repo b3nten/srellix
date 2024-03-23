@@ -113,11 +113,11 @@ export type Actions = {
 
 const BoardContext = createContext<
   | {
-      board: Board;
-      columns: Column[];
-      notes: Note[];
-      actions: Actions;
-    }
+    board: Board;
+    columns: Column[];
+    notes: Note[];
+    actions: Actions;
+  }
   | undefined
 >();
 
@@ -316,9 +316,16 @@ export function Board(props: { board: BoardData; actions: Actions }) {
     boardStore.columns.slice().sort((a, b) => a.order - b.order)
   );
 
+  let scrollContainerRef: HTMLDivElement | undefined;
+
   return (
     <BoardContext.Provider value={boardStore}>
-      <div class="min-w-full h-full overflow-x-auto overflow-y-hidden p-12 flex flex-start items-start flex-nowrap">
+      <div
+        ref={(el) => {
+          scrollContainerRef = el
+        }}
+        class="min-w-full h-full overflow-x-auto overflow-y-hidden p-12 flex flex-start items-start flex-nowrap"
+      >
         <ColumnGap right={sortedColumns()[0]} />
         <For each={sortedColumns()}>
           {(column, i) => (
@@ -331,7 +338,9 @@ export function Board(props: { board: BoardData; actions: Actions }) {
             </>
           )}
         </For>
-        <AddColumn board={props.board.board.id} />
+        <AddColumn board={props.board.board.id} onAdd={() => {
+          scrollContainerRef && (scrollContainerRef.scrollLeft = scrollContainerRef.scrollWidth)
+        }} />
       </div>
     </BoardContext.Provider>
   );
@@ -463,7 +472,9 @@ function Column(props: { column: Column }) {
         </For>
       </div>
       <div class="py-2" />
-      <AddNote column={props.column.id} length={ctx.notes.length} />
+      <AddNote column={props.column.id} length={ctx.notes.length} onAdd={() => {
+        parent && (parent.scrollTop = parent.scrollHeight)
+      }} />
     </div>
   );
 }
@@ -591,46 +602,51 @@ function Note(props: { note: Note; previous?: Note; next?: Note }) {
   );
 }
 
-function AddNote(props: { column: ID; length: number }) {
+function AddNote(props: { column: ID; length: number, onAdd: () => void }) {
   const { actions } = useBoard();
   const [active, setActive] = createSignal(false);
   const addNote = useAction(actions.createNote);
-  let inputRef: HTMLTextAreaElement | undefined;
+  let inputRef: HTMLInputElement | undefined;
   return (
     <div class="w-full flex justify-center">
       <Switch>
         <Match when={active()}>
-          <div class="flex flex-col space-y-2 card bg-base-200 p-2 w-full">
-            <textarea
+          <form class="flex flex-col space-y-2 card bg-base-200 p-2 w-full"
+            onSubmit={(e) => {
+              e.preventDefault()
+              addNote({
+                id: crypto.randomUUID(),
+                board: "board",
+                column: props.column,
+                body: inputRef?.value ?? "Note",
+                order: props.length + 1,
+                timestamp: new Date().getTime(),
+              });
+              inputRef && (inputRef.value = '')
+              props.onAdd()
+            }}
+          >
+            <input
               ref={(el) => {
                 inputRef = el;
                 setTimeout(() => requestAnimationFrame(() => void el.focus()));
               }}
               class="textarea"
               placeholder="Add a Note"
+              required
             />
             <div class="space-x-2">
               <button
                 class="btn btn-success"
-                onClick={() => {
-                  addNote({
-                    id: crypto.randomUUID(),
-                    board: "board",
-                    column: props.column,
-                    body: inputRef?.value ?? "Note",
-                    order: props.length + 1,
-                    timestamp: new Date().getTime(),
-                  });
-                  setActive(false);
-                }}
+                type="submit"
               >
                 Add
               </button>
-              <button class="btn btn-error" onClick={() => setActive(false)}>
+              <button class="btn btn-error" type="reset" onClick={() => setActive(false)}>
                 Cancel
               </button>
             </div>
-          </div>
+          </form>
         </Match>
         <Match when={!active()}>
           <button class="btn btn-circle" onClick={() => setActive(true)}>
@@ -642,7 +658,7 @@ function AddNote(props: { column: ID; length: number }) {
   );
 }
 
-function AddColumn(props: { board: ID }) {
+function AddColumn(props: { board: ID, onAdd: () => void }) {
   const { actions } = useBoard();
 
   const [active, setActive] = createSignal(false);
@@ -654,7 +670,16 @@ function AddColumn(props: { board: ID }) {
   return (
     <Switch>
       <Match when={active()}>
-        <div class="flex flex-col space-y-2 card bg-base-200 p-2 w-full max-w-[300px]">
+        <form onSubmit={(e) => (
+          e.preventDefault(),
+          addColumn(
+            crypto.randomUUID(),
+            props.board,
+            inputRef?.value ?? "Column",
+            new Date().getTime()
+          ),
+          inputRef && (inputRef.value = ''), props.onAdd()
+        )} class="flex flex-col space-y-2 card bg-base-200 p-2 w-full max-w-[300px]">
           <input
             ref={(el) => {
               (inputRef = el),
@@ -662,27 +687,20 @@ function AddColumn(props: { board: ID }) {
             }}
             class="input"
             placeholder="Add a Column"
+            required
           />
           <div class="space-x-2">
             <button
-              onClick={() => (
-                addColumn(
-                  crypto.randomUUID(),
-                  props.board,
-                  inputRef?.value ?? "Column",
-                  new Date().getTime()
-                ),
-                setActive(false)
-              )}
+              type="submit"
               class="btn btn-success"
             >
               Add
             </button>
-            <button class="btn btn-error" onClick={() => setActive(false)}>
+            <button type="reset" class="btn btn-error" onClick={() => setActive(false)}>
               Cancel
             </button>
           </div>
-        </div>
+        </form>
       </Match>
       <Match when={!active()}>
         <button class="btn btn-circle" onClick={() => setActive(true)}>
